@@ -1,0 +1,29 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": [
+		"./src/index.ts",
+		"./src/parse.ts",
+		"./src/diagnostics.ts",
+		"./src/extensions.ts",
+		"./src/extensions-parse.ts"
+	],
+	"projectDocuments": ["./guides/*.md"],
+	"tsconfig": "./tsconfig.json",
+	"out": "./docs",
+	"name": "@neutrium/formatter",
+	"includeVersion": true,
+	"readme": "./README.md",
+	"excludeInternal": true,
+	"excludePrivate": true,
+	"excludeProtected": true,
+	"validation": {
+		"notDocumented": true,
+		"invalidLink": true
+	},
+	"treatWarningsAsErrors": true,
+	"intentionallyNotExported": ["builtInCodecs", "builtInParsers", "AnyParseCodec", "CodecSpec", "createDurationCodec", "Operation", "Selected", "Presentations", "SupportedResolvedFormat", "UnsupportedResolvedFormat", "AnyFormatCodec", "CodecMap", "RangeCompiledFormatter"],
+	"cleanOutputDir": true,
+	"navigationLinks": {
+		"Interactive demo": "https://neutrium.github.io/formatter/demo/"
+	}
+}

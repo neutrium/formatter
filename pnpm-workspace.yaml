@@ -1,0 +1,3 @@
+# Allow the explicitly selected Decimal release through pnpm's release-age check.
+minimumReleaseAgeExclude:
+  - '@neutrium/decimal@2.2.0'

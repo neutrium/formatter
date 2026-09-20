@@ -1,0 +1,118 @@
+{
+	"name": "@neutrium/formatter",
+	"version": "1.0.0",
+	"description": "Humanise numbers - Intl-first exact formatting and strict parsing for numbers, currencies, percentages, units, bytes and durations.",
+	"keywords": [
+		"neutrium",
+		"formatter",
+		"number",
+		"decimal",
+		"currency",
+		"percentage",
+		"units",
+		"bytes",
+		"duration",
+		"localization",
+		"i18n",
+		"intl"
+	],
+	"license": "MIT",
+	"author": "Trevor Walker <trevorw@neutrium.net> (https://neutrium.net)",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/neutrium/formatter.git"
+	},
+	"homepage": "https://neutrium.github.io/formatter/",
+	"bugs": {
+		"url": "https://github.com/neutrium/formatter/issues"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"type": "module",
+	"sideEffects": false,
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./parse": {
+			"import": {
+				"types": "./dist/parse.d.ts",
+				"default": "./dist/parse.js"
+			}
+		},
+		"./extensions": {
+			"import": {
+				"types": "./dist/extensions.d.ts",
+				"default": "./dist/extensions.js"
+			}
+		},
+		"./extensions/parse": {
+			"import": {
+				"types": "./dist/extensions-parse.d.ts",
+				"default": "./dist/extensions-parse.js"
+			}
+		},
+		"./diagnostics": {
+			"import": {
+				"types": "./dist/diagnostics.d.ts",
+				"default": "./dist/diagnostics.js"
+			}
+		}
+	},
+	"files": [
+		"dist",
+		"src/**/*.ts",
+		"README.md",
+		"guides/*.md",
+		"LICENSE",
+		"UNICODE-LICENSE.txt"
+	],
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"scripts": {
+		"clean": "rm -rf dist",
+		"build": "pnpm run clean && tsc -p tsconfig.json && pnpm run sizes:built",
+		"sizes:built": "node tools/bundle-sizes.mjs --write",
+		"sizes:check": "node tools/bundle-sizes.mjs --check",
+		"docs": "typedoc",
+		"demo": "vite demo --host 127.0.0.1 --port 4173 --strictPort --base /demo/",
+		"demo:dev": "pnpm run build && vite --config demo/vite.config.mjs",
+		"demo:test": "pnpm run build && node tools/test-demo.mjs",
+		"demo:check": "tsc -p demo/tsconfig.json",
+		"demo:build": "pnpm run build && pnpm run demo:bundle",
+		"demo:bundle": "pnpm run demo:check && vite build --config demo/vite.config.mjs",
+		"site": "pnpm run build && pnpm run site:built",
+		"site:built": "pnpm run docs && pnpm run demo:bundle",
+		"test": "pnpm run build && pnpm run test:built",
+		"test:built": "tsc -p tests/tsconfig.json && node --test tests/*.test.js",
+		"test:integration": "pnpm run build && pnpm run test:integration:built",
+		"test:integration:built": "node --test tests/integration/*.test.js",
+		"test:package": "node tools/test-package.mjs",
+		"test:package:built": "node tools/test-package.mjs --skip-build",
+		"test:browser": "pnpm run build && pnpm run test:browser:built",
+		"test:browser:built": "node tools/test-browser.mjs",
+		"verify": "pnpm run build && pnpm run verify:built",
+		"verify:built": "pnpm run test:built && pnpm run test:integration:built && pnpm run test:package:built",
+		"prepack": "node tools/prepack.mjs",
+		"prepublishOnly": "pnpm run verify"
+	},
+	"devDependencies": {
+		"cldr-core": "^48.2.0",
+		"playwright": "^1.63.0",
+		"typedoc": "^0.28.20",
+		"typescript": "^6.0.3",
+		"typescript-min": "npm:typescript@5.4.5",
+		"vite": "^8.2.2"
+	},
+	"packageManager": "pnpm@11.5.0",
+	"dependencies": {
+		"@neutrium/decimal": "^2.2.0"
+	}
+}
