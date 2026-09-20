@@ -62,8 +62,19 @@ After building, `node tools/benchmark-formatting.mjs` compares optimized series 
 
 - `CI` runs behaviour tests and packed-consumer runtime checks on every push to `main` and every pull request using Node 24.0.0, the latest 24.x, and the latest 26.x. A separate Node 24.x job runs documentation, bundle checks and the full TypeScript declaration matrix. Another job runs Chromium, Firefox and WebKit compatibility tests.
 - `Documentation` builds TypeDoc plus the interactive demo and deploys both to GitHub Pages after site-relevant changes reach `main`. Configure the repository's Pages source as **GitHub Actions** before the first deployment.
-- `Release` publishes to npm when a GitHub Release is published, after the reusable CI workflow passes its Node matrix, integration and browser jobs for that release. The release tag must be `v` followed by the version in `package.json`. Stable releases use the npm `latest` tag; GitHub prereleases use `next`. Direct `npm publish` also runs the behaviour, integration and packed-consumer checks through `prepublishOnly`.
+- `Release` starts when a tag matching `v*.*.*` is pushed, after which the reusable CI workflow must pass its Node matrix, integration and browser jobs. The tag must be `v` followed by the version in `package.json`. Stable versions use the npm `latest` tag; prerelease versions such as `1.1.0-rc.0` use `next`. After npm publication succeeds, the workflow creates a GitHub Release with generated notes and marks prerelease versions accordingly. Direct `npm publish` also runs the behaviour, integration and packed-consumer checks through `prepublishOnly`.
 
 Each independent CI job builds its own package once; later checks use the `:built` runners. During `npm publish`, `prepublishOnly` runs `verify`, and the subsequent `prepack` hook reuses that verified output. Standalone `npm pack` and `pnpm pack` still run a fresh build. Do not bypass lifecycle scripts when publishing; the consumer-test runner suppresses them only when packing already-built output for verification.
 
-Releases use npm trusted publishing and do not require a long-lived npm token. Before the first release, configure the npm package's GitHub Actions trusted publisher for the `neutrium/formatter` repository, workflow filename `release.yml`, and the `npm publish` action.
+Releases use npm trusted publishing and do not require a long-lived npm token. Configure the npm package's GitHub Actions trusted publisher for the `neutrium/formatter` repository, workflow filename `release.yml`, and the `npm publish` action. Leave the environment field blank; the npm publishing job does not declare an environment.
+
+For a package that does not yet exist on npm, publish the initial version locally with `npm publish --access public`, then configure trusted publishing in its package settings. For that initial version only, disable the Release workflow before pushing its version tag, create the matching GitHub Release manually, and re-enable the workflow afterward. This avoids trying to republish the already-published version.
+
+For subsequent releases, commit and push the version change and release files, then push the matching tag:
+
+```sh
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+Use the actual version from `package.json`. The tag must point to the intended release commit. No manual GitHub Release is needed; creating one does not trigger npm publication. Documentation and the demo continue to deploy independently from `main`.

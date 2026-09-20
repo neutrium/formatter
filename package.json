@@ -1,6 +1,6 @@
 {
 	"name": "@neutrium/formatter",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Humanise numbers - Intl-first exact formatting and strict parsing for numbers, currencies, percentages, units, bytes and durations.",
 	"keywords": [
 		"neutrium",

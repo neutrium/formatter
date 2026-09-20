@@ -1,16 +1,14 @@
 name: Release
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "v*.*.*"
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 
 concurrency:
-  group: release-${{ github.event.release.tag_name }}
+  group: npm-release
   cancel-in-progress: false
 
 jobs:
@@ -23,10 +21,19 @@ jobs:
     needs: verify
     name: Publish to npm
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      name: ${{ steps.package.outputs.name }}
+      version: ${{ steps.package.outputs.version }}
+      prerelease: ${{ steps.package.outputs.prerelease }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
 
       - name: Set up pnpm
         uses: pnpm/setup@v2
@@ -41,14 +48,37 @@ jobs:
       - name: Install npm with trusted publishing support
         run: npm install --global npm@11.17.0
 
-      - name: Verify release tag
+      - name: Validate release metadata
+        id: package
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          package_version="$(node -p "require('./package.json').version")"
-          expected_tag="v${package_version}"
-          if [[ "${GITHUB_REF_NAME}" != "${expected_tag}" ]]; then
-            echo "::error::Release tag ${GITHUB_REF_NAME} does not match package version ${expected_tag}."
+          package_name="$(node --print "require('./package.json').name")"
+          version="$(node --print "require('./package.json').version")"
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "package.json contains an invalid release version: $version" >&2
             exit 1
           fi
+
+          expected_tag="v$version"
+          if [[ "$RELEASE_TAG" != "$expected_tag" ]]; then
+            echo "Release tag $RELEASE_TAG does not match package.json version $version (expected $expected_tag)." >&2
+            exit 1
+          fi
+
+          dist_tag=latest
+          prerelease=false
+          if [[ "${version%%+*}" == *-* ]]; then
+            dist_tag=next
+            prerelease=true
+          fi
+
+          echo "name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=$dist_tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -56,5 +86,34 @@ jobs:
       # prepublishOnly builds once and runs the full aggregate verification.
       - name: Verify and publish package
         env:
-          NPM_DIST_TAG: ${{ github.event.release.prerelease && 'next' || 'latest' }}
+          NPM_DIST_TAG: ${{ steps.package.outputs.dist_tag }}
         run: npm publish --access public --tag "${NPM_DIST_TAG}"
+
+  github-release:
+    name: Create GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_NAME: ${{ needs.publish.outputs.name }}
+          PRERELEASE: ${{ needs.publish.outputs.prerelease }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.publish.outputs.version }}
+        run: |
+          release_flags=(
+            --generate-notes
+            --title "$PACKAGE_NAME $VERSION"
+            --verify-tag
+          )
+
+          if [[ "$PRERELEASE" == "true" ]]; then
+            release_flags+=(--prerelease)
+          fi
+
+          gh release create "$RELEASE_TAG" "${release_flags[@]}"
